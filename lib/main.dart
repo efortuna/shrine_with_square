@@ -1,111 +1,148 @@
+// Copyright 2018-present the Flutter authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import 'package:flutter/material.dart';
+import 'package:scoped_model/scoped_model.dart';
 
-void main() => runApp(MyApp());
+import 'package:shrine_with_square/backdrop.dart';
+import 'package:shrine_with_square/category_menu_page.dart';
+import 'package:shrine_with_square/colors.dart';
+import 'package:shrine_with_square/expanding_bottom_sheet.dart';
+import 'package:shrine_with_square/home.dart';
+import 'package:shrine_with_square/login.dart';
+import 'package:shrine_with_square/model/app_state_model.dart';
+import 'package:shrine_with_square/supplemental/cut_corners_border.dart';
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+void main() => runApp(ShrineApp());
+
+class ShrineApp extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+  _ShrineAppState createState() => _ShrineAppState();
+}
+
+class _ShrineAppState extends State<ShrineApp> with SingleTickerProviderStateMixin {
+  // Controller to coordinate both the opening/closing of backdrop and sliding
+  // of expanding bottom sheet
+  AnimationController _controller;
+  AppStateModel model;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+      value: 1.0,
     );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+    model = AppStateModel()..loadProducts();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
-            ),
-          ],
+    return ScopedModel<AppStateModel>(
+      model: model,
+      child: MaterialApp(
+      title: 'Shrine',
+      home: HomePage(
+        backdrop: Backdrop(
+          frontLayer: const ProductPage(),
+          backLayer: CategoryMenuPage(onCategoryTap: () => _controller.forward()),
+          frontTitle: const Text('SHRINE'),
+          backTitle: const Text('MENU'),
+          controller: _controller,
         ),
+        expandingBottomSheet: ExpandingBottomSheet(hideController: _controller),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      initialRoute: '/login',
+      onGenerateRoute: _getRoute,
+      // Copy the platform from the main theme in order to support platform
+      // toggling from the Gallery options menu.
+      theme: _kShrineTheme.copyWith(platform: Theme.of(context).platform),
+    ),
     );
   }
 }
+
+Route<dynamic> _getRoute(RouteSettings settings) {
+  if (settings.name != '/login') {
+    return null;
+  }
+
+  return MaterialPageRoute<void>(
+    settings: settings,
+    builder: (BuildContext context) => LoginPage(),
+    fullscreenDialog: true,
+  );
+}
+
+final ThemeData _kShrineTheme = _buildShrineTheme();
+
+IconThemeData _customIconTheme(IconThemeData original) {
+  return original.copyWith(color: kShrineBrown900);
+}
+
+ThemeData _buildShrineTheme() {
+  final ThemeData base = ThemeData.light();
+  return base.copyWith(
+    colorScheme: kShrineColorScheme,
+    accentColor: kShrineBrown900,
+    primaryColor: kShrinePink100,
+    buttonColor: kShrinePink100,
+    scaffoldBackgroundColor: kShrineBackgroundWhite,
+    cardColor: kShrineBackgroundWhite,
+    textSelectionColor: kShrinePink100,
+    errorColor: kShrineErrorRed,
+    buttonTheme: const ButtonThemeData(
+      colorScheme: kShrineColorScheme,
+      textTheme: ButtonTextTheme.normal,
+    ),
+    primaryIconTheme: _customIconTheme(base.iconTheme),
+    inputDecorationTheme: const InputDecorationTheme(border: CutCornersBorder()),
+    textTheme: _buildShrineTextTheme(base.textTheme),
+    primaryTextTheme: _buildShrineTextTheme(base.primaryTextTheme),
+    accentTextTheme: _buildShrineTextTheme(base.accentTextTheme),
+    iconTheme: _customIconTheme(base.iconTheme),
+  );
+}
+
+TextTheme _buildShrineTextTheme(TextTheme base) {
+  return base.copyWith(
+    headline: base.headline.copyWith(fontWeight: FontWeight.w500),
+    title: base.title.copyWith(fontSize: 18.0),
+    caption: base.caption.copyWith(fontWeight: FontWeight.w400, fontSize: 14.0),
+    body2: base.body2.copyWith(fontWeight: FontWeight.w500, fontSize: 16.0),
+    button: base.button.copyWith(fontWeight: FontWeight.w500, fontSize: 14.0),
+  ).apply(
+    fontFamily: 'Raleway',
+    displayColor: kShrineBrown900,
+    bodyColor: kShrineBrown900,
+  );
+}
+
+const ColorScheme kShrineColorScheme = ColorScheme(
+  primary: kShrinePink100,
+  primaryVariant: kShrineBrown900,
+  secondary: kShrinePink50,
+  secondaryVariant: kShrineBrown900,
+  surface: kShrineSurfaceWhite,
+  background: kShrineBackgroundWhite,
+  error: kShrineErrorRed,
+  onPrimary: kShrineBrown900,
+  onSecondary: kShrineBrown900,
+  onSurface: kShrineBrown900,
+  onBackground: kShrineBrown900,
+  onError: kShrineSurfaceWhite,
+  brightness: Brightness.light,
+);
+
