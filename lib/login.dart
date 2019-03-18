@@ -33,15 +33,14 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: Colors.white,
         brightness: Brightness.light,
         leading: IconButton(
-          icon: const BackButtonIcon(),
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () {
-            // The login screen is immediately displayed on top of the Shrine
-            // home screen using onGenerateRoute and so rootNavigator must be
-            // set to true in order to get out of Shrine completely.
-            Navigator.of(context, rootNavigator: true).pop();
-          }
-        ),
+            icon: const BackButtonIcon(),
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () {
+              // The login screen is immediately displayed on top of the Shrine
+              // home screen using onGenerateRoute and so rootNavigator must be
+              // set to true in order to get out of Shrine completely.
+              Navigator.of(context, rootNavigator: true).pop();
+            }),
       ),
       body: SafeArea(
         child: ListView(
@@ -117,7 +116,8 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class PrimaryColorOverride extends StatelessWidget {
-  const PrimaryColorOverride({Key key, this.color, this.child}) : super(key: key);
+  const PrimaryColorOverride({Key key, this.color, this.child})
+      : super(key: key);
 
   final Color color;
   final Widget child;

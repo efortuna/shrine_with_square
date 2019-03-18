@@ -31,7 +31,8 @@ class ShrineApp extends StatefulWidget {
   _ShrineAppState createState() => _ShrineAppState();
 }
 
-class _ShrineAppState extends State<ShrineApp> with SingleTickerProviderStateMixin {
+class _ShrineAppState extends State<ShrineApp>
+    with SingleTickerProviderStateMixin {
   // Controller to coordinate both the opening/closing of backdrop and sliding
   // of expanding bottom sheet
   AnimationController _controller;
@@ -53,23 +54,25 @@ class _ShrineAppState extends State<ShrineApp> with SingleTickerProviderStateMix
     return ScopedModel<AppStateModel>(
       model: model,
       child: MaterialApp(
-      title: 'Shrine',
-      home: HomePage(
-        backdrop: Backdrop(
-          frontLayer: const ProductPage(),
-          backLayer: CategoryMenuPage(onCategoryTap: () => _controller.forward()),
-          frontTitle: const Text('SHRINE'),
-          backTitle: const Text('MENU'),
-          controller: _controller,
+        title: 'Shrine',
+        home: HomePage(
+          backdrop: Backdrop(
+            frontLayer: const ProductPage(),
+            backLayer:
+                CategoryMenuPage(onCategoryTap: () => _controller.forward()),
+            frontTitle: const Text('SHRINE'),
+            backTitle: const Text('MENU'),
+            controller: _controller,
+          ),
+          expandingBottomSheet:
+              ExpandingBottomSheet(hideController: _controller),
         ),
-        expandingBottomSheet: ExpandingBottomSheet(hideController: _controller),
+        initialRoute: '/login',
+        onGenerateRoute: _getRoute,
+        // Copy the platform from the main theme in order to support platform
+        // toggling from the Gallery options menu.
+        theme: _kShrineTheme.copyWith(platform: Theme.of(context).platform),
       ),
-      initialRoute: '/login',
-      onGenerateRoute: _getRoute,
-      // Copy the platform from the main theme in order to support platform
-      // toggling from the Gallery options menu.
-      theme: _kShrineTheme.copyWith(platform: Theme.of(context).platform),
-    ),
     );
   }
 }
@@ -108,7 +111,8 @@ ThemeData _buildShrineTheme() {
       textTheme: ButtonTextTheme.normal,
     ),
     primaryIconTheme: _customIconTheme(base.iconTheme),
-    inputDecorationTheme: const InputDecorationTheme(border: CutCornersBorder()),
+    inputDecorationTheme:
+        const InputDecorationTheme(border: CutCornersBorder()),
     textTheme: _buildShrineTextTheme(base.textTheme),
     primaryTextTheme: _buildShrineTextTheme(base.primaryTextTheme),
     accentTextTheme: _buildShrineTextTheme(base.accentTextTheme),
@@ -117,17 +121,21 @@ ThemeData _buildShrineTheme() {
 }
 
 TextTheme _buildShrineTextTheme(TextTheme base) {
-  return base.copyWith(
-    headline: base.headline.copyWith(fontWeight: FontWeight.w500),
-    title: base.title.copyWith(fontSize: 18.0),
-    caption: base.caption.copyWith(fontWeight: FontWeight.w400, fontSize: 14.0),
-    body2: base.body2.copyWith(fontWeight: FontWeight.w500, fontSize: 16.0),
-    button: base.button.copyWith(fontWeight: FontWeight.w500, fontSize: 14.0),
-  ).apply(
-    fontFamily: 'Raleway',
-    displayColor: kShrineBrown900,
-    bodyColor: kShrineBrown900,
-  );
+  return base
+      .copyWith(
+        headline: base.headline.copyWith(fontWeight: FontWeight.w500),
+        title: base.title.copyWith(fontSize: 18.0),
+        caption:
+            base.caption.copyWith(fontWeight: FontWeight.w400, fontSize: 14.0),
+        body2: base.body2.copyWith(fontWeight: FontWeight.w500, fontSize: 16.0),
+        button:
+            base.button.copyWith(fontWeight: FontWeight.w500, fontSize: 14.0),
+      )
+      .apply(
+        fontFamily: 'Raleway',
+        displayColor: kShrineBrown900,
+        bodyColor: kShrineBrown900,
+      );
 }
 
 const ColorScheme kShrineColorScheme = ColorScheme(
@@ -145,4 +153,3 @@ const ColorScheme kShrineColorScheme = ColorScheme(
   onError: kShrineSurfaceWhite,
   brightness: Brightness.light,
 );
-

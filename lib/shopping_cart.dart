@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'dart:isolate';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:scoped_model/scoped_model.dart';
@@ -19,7 +21,10 @@ import 'package:scoped_model/scoped_model.dart';
 import 'package:shrine_with_square/colors.dart';
 import 'package:shrine_with_square/expanding_bottom_sheet.dart';
 import 'package:shrine_with_square/model/app_state_model.dart';
+import 'package:shrine_with_square/model/payments_repository.dart';
 import 'package:shrine_with_square/model/product.dart';
+import 'package:square_in_app_payments/in_app_payments.dart';
+import 'package:square_in_app_payments/models.dart';
 
 const double _leftColumnWidth = 60.0;
 
@@ -31,13 +36,14 @@ class ShoppingCartPage extends StatefulWidget {
 class _ShoppingCartPageState extends State<ShoppingCartPage> {
   List<Widget> _createShoppingCartRows(AppStateModel model) {
     return model.productsInCart.keys
-        .map((int id) => ShoppingCartRow(
-            product: model.getProductById(id),
-            quantity: model.productsInCart[id],
-            onPressed: () {
-              model.removeItemFromCart(id);
-            },
-          ),
+        .map(
+          (int id) => ShoppingCartRow(
+                product: model.getProductById(id),
+                quantity: model.productsInCart[id],
+                onPressed: () {
+                  model.removeItemFromCart(id);
+                },
+              ),
         )
         .toList();
   }
@@ -62,12 +68,14 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                             width: _leftColumnWidth,
                             child: IconButton(
                               icon: const Icon(Icons.keyboard_arrow_down),
-                              onPressed: () => ExpandingBottomSheet.of(context).close(),
+                              onPressed: () =>
+                                  ExpandingBottomSheet.of(context).close(),
                             ),
                           ),
                           Text(
                             'CART',
-                            style: localTheme.textTheme.subhead.copyWith(fontWeight: FontWeight.w600),
+                            style: localTheme.textTheme.subhead
+                                .copyWith(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(width: 16.0),
                           Text('${model.totalCartQuantity} ITEMS'),
@@ -85,20 +93,14 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                     bottom: 16.0,
                     left: 16.0,
                     right: 16.0,
-                    child: RaisedButton(
-                      shape: const BeveledRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(7.0)),
-                      ),
-                      color: kShrinePink100,
-                      splashColor: kShrineBrown600,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12.0),
-                        child: Text('CLEAR CART'),
-                      ),
-                      onPressed: () {
-                        model.clearCart();
-                        ExpandingBottomSheet.of(context).close();
-                      },
+                    child: Column(
+                      children: <Widget>[
+                        _prettyButton(model, 'TAKE MY MONEY', _payment),
+                        _prettyButton(model, 'CLEAR CART', (_) {
+                          model.clearCart();
+                          ExpandingBottomSheet.of(context).close();
+                        }),
+                      ],
                     ),
                   ),
                 ],
@@ -107,6 +109,39 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
           ),
         ),
       ),
+    );
+  }
+
+  _payment(AppStateModel model) async {
+    await InAppPayments.setSquareApplicationId('sq0idp-Q29izRgOaacjZjUl0Ags-g');
+    await InAppPayments.startCardEntryFlow(
+        onCardNonceRequestSuccess: (CardDetails result) {
+          try {
+            var chargeResult =
+                PaymentsRepository.actuallyMakeTheCharge(result.nonce);
+            if (chargeResult != 'Success!') throw new StateError(chargeResult);
+            InAppPayments.completeCardEntry(
+                onCardEntryComplete: model.clearCart);
+          } catch (ex) {
+            InAppPayments.showCardNonceProcessingError(ex.toString());
+          }
+        },
+        onCardEntryCancel: () {});
+    //ExpandingBottomSheet.of(context).close();
+  }
+
+  Widget _prettyButton(AppStateModel model, String text, Function action) {
+    return RaisedButton(
+      shape: const BeveledRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(7.0)),
+      ),
+      color: kShrinePink100,
+      splashColor: kShrineBrown600,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 12.0),
+        child: Text(text),
+      ),
+      onPressed: () => action(model),
     );
   }
 }
@@ -118,7 +153,8 @@ class ShoppingCartSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextStyle smallAmountStyle = Theme.of(context).textTheme.body1.copyWith(color: kShrineBrown600);
+    final TextStyle smallAmountStyle =
+        Theme.of(context).textTheme.body1.copyWith(color: kShrineBrown600);
     final TextStyle largeAmountStyle = Theme.of(context).textTheme.display1;
     final NumberFormat formatter = NumberFormat.simpleCurrency(
       decimalDigits: 2,
@@ -252,7 +288,8 @@ class ShoppingCartRow extends StatelessWidget {
                             ),
                             Text(
                               product.name,
-                              style: localTheme.textTheme.subhead.copyWith(fontWeight: FontWeight.w600),
+                              style: localTheme.textTheme.subhead
+                                  .copyWith(fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
